@@ -32,3 +32,12 @@ class Observation(models.Model):
 
     def __str__(self):
         return f"#{self.id}"
+
+
+class GlobalNote(models.Model):
+    note = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"#{self.id}"

@@ -1,9 +1,7 @@
-from django.db.models import Count
-
 from datetime import date
 from ninja import NinjaAPI, Schema, Field
 from typing import List
-from .models import Hive, Observation
+from .models import Hive, Observation, GlobalNote
 from ninja.security import HttpBearer
 
 
@@ -36,8 +34,9 @@ class ObservationSchema(Schema):
     size: int
 
 
-class Error(Schema):
-    message: str
+class GlobalNoteSchema(Schema):
+    noteid: int = Field(None, alias="id")
+    note: str
 
 
 # check if service is up
@@ -48,13 +47,13 @@ def check_status(request):
 
 # get all hives for a user
 @api.get("/hives/{userid}", response=List[HiveSchema], auth=AuthBearer())
-def hello(request, userid: str):
+def get_hives(request, userid: str):
     hives = Hive.objects.filter(userid=userid)
     return hives
 
 
 # create new hive or update existing
-@api.post("/hive", response={200: HiveSchema, 403: Error}, auth=AuthBearer())
+@api.post("/hive", response=HiveSchema, auth=AuthBearer())
 def create_hive(request, payload: HiveSchema):
     hive, _ = Hive.objects.get_or_create(**payload.dict())
     return hive
@@ -63,7 +62,7 @@ def create_hive(request, payload: HiveSchema):
 # get all observations for a user
 # limit: max allowed observations per hive
 @api.get("/obs/{userid}/{limit}", response=List[ObservationSchema], auth=AuthBearer())
-def hello(request, userid: str, limit: int):
+def get_observations(request, userid: str, limit: int):
     obs = Observation.objects.filter(userid=userid)
     # limit observations per hive
     
@@ -71,8 +70,8 @@ def hello(request, userid: str, limit: int):
 
 
 # create new observation
-@api.post("/obs", response={200: ObservationSchema, 403: Error}, auth=AuthBearer())
-def create_hive(request, payload: ObservationSchema):
+@api.post("/obs", response=ObservationSchema, auth=AuthBearer())
+def create_observation(request, payload: ObservationSchema):
     hive = Hive.objects.get(id=payload.hive)
     obs = Observation.objects.create(
         hive=hive,
@@ -86,5 +85,19 @@ def create_hive(request, payload: ObservationSchema):
         size=payload.size
     )
     return obs
+
+
+# get all global notes for a user
+@api.get("/notes/{userid}", response=List[GlobalNoteSchema], auth=AuthBearer())
+def get_notes(request, userid: str):
+    notes = GlobalNote.objects.filter(userid=userid)
+    return notes
+
+
+# create new global note
+@api.post("/note", response=GlobalNoteSchema, auth=AuthBearer())
+def create_note(request, payload: GlobalNoteSchema):
+    note, _ = GlobalNote.objects.get_or_create(**payload.dict())
+    return note
 
 
