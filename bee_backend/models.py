@@ -36,6 +36,7 @@ class Observation(models.Model):
 
 class GlobalNote(models.Model):
     note = models.TextField()
+    userid = models.CharField(max_length=64)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
