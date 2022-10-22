@@ -41,6 +41,7 @@ class ObservationSchema(Schema):
 
 class GlobalNoteSchema(Schema):
     id: int = Field(None, alias="id")
+    userid: str
     note: str
 
 
@@ -64,7 +65,7 @@ def get_hives(request, userid: str, status: str):
 # create new hive or update existing
 @api.post("/hive", response=HiveSchema, auth=AuthBearer())
 def create_hive(request, payload: HiveSchema):
-    hive, _ = Hive.objects.get_or_create(
+    hive, created = Hive.objects.get_or_create(
         id=payload.id,
         userid=payload.userid,
         defaults={
@@ -75,6 +76,14 @@ def create_hive(request, payload: HiveSchema):
             "archived": payload.archived,
         }
     )
+    # if hive already exists, update it
+    if not created:
+        hive.number = payload.number
+        hive.colour = payload.colour
+        hive.place = payload.place
+        hive.frames = payload.frames
+        hive.archived = payload.archived
+        hive.save()
     return hive
 
 
@@ -102,7 +111,7 @@ def get_observations(request, userid: str, limit: int):
 @api.post("/obs", response=ObservationSchema, auth=AuthBearer())
 def create_observation(request, payload: ObservationSchema):
     hive = Hive.objects.get(id=payload.hive)
-    obs = Observation.objects.get_or_create(
+    obs, created = Observation.objects.get_or_create(
         id=payload.id,
         hive=hive,
         userid=payload.userid,
@@ -117,6 +126,17 @@ def create_observation(request, payload: ObservationSchema):
             "varroa": payload.varroa,
         }
     )
+    # if observation already exists, update it
+    if not created:
+        obs.observation_date = payload.observation_date
+        obs.observation = payload.observation
+        obs.queen = payload.queen
+        obs.larva = payload.larva
+        obs.egg = payload.egg
+        obs.mood = payload.mood
+        obs.size = payload.size
+        obs.varroa = payload.varroa
+        obs.save()
     return obs
 
 
@@ -138,12 +158,17 @@ def get_notes(request, userid: str):
 # create new global note
 @api.post("/note", response=GlobalNoteSchema, auth=AuthBearer())
 def create_note(request, payload: GlobalNoteSchema):
-    note, _ = GlobalNote.objects.get_or_create(
+    note, created = GlobalNote.objects.get_or_create(
         id = payload.id,
+        userid = payload.userid,
         defaults={
             "note": payload.note,
         }
     )
+    # if note already exists, update it
+    if not created:
+        note.note = payload.note
+        note.save()
     return note
 
 
