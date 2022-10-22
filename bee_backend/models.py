@@ -3,12 +3,15 @@ from django.db import models
 
 class Hive(models.Model):
     userid = models.CharField(max_length=64)
-    number = models.IntegerField()
+    number = models.CharField(max_length=16)
     colour = models.CharField(max_length=16)
     place = models.CharField(max_length=128)
     frames = models.IntegerField()
+    archived = models.BooleanField(default=False)
+
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    deleted = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("userid", "number")
@@ -27,8 +30,11 @@ class Observation(models.Model):
     egg = models.IntegerField()
     mood = models.IntegerField()
     size = models.IntegerField()
+    varroa = models.IntegerField()
+
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"#{self.id}"
@@ -37,8 +43,10 @@ class Observation(models.Model):
 class GlobalNote(models.Model):
     note = models.TextField()
     userid = models.CharField(max_length=64)
+    
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+    deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"#{self.id}"
