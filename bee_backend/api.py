@@ -1,9 +1,10 @@
 from datetime import date
 from ninja import NinjaAPI, Schema, Field
+from ninja.security import HttpBearer
 from typing import List
 from bee_backend.settings import SECRET_CRED
 from .models import Hive, Observation, GlobalNote
-from ninja.security import HttpBearer
+from .tools import log_activity
 
 
 class AuthBearer(HttpBearer):
@@ -46,14 +47,16 @@ class GlobalNoteSchema(Schema):
 
 
 # check if service is up
-@api.get("/status")
+@api.get("/status", auth=AuthBearer())
 def check_status(request):
+    log_activity("status")
     return {"status": "ok"}
 
 
 # get all hives for a user
 @api.get("/hives/{userid}/{status}", response=List[HiveSchema], auth=AuthBearer())
 def get_hives(request, userid: str, status: str):
+    log_activity(userid)
     if status == "deleted":
         return Hive.objects.filter(userid=userid, deleted=True)
     elif status == "archived":
@@ -65,6 +68,7 @@ def get_hives(request, userid: str, status: str):
 # create new hive or update existing
 @api.post("/hive", response=HiveSchema, auth=AuthBearer())
 def create_hive(request, payload: HiveSchema):
+    log_activity(payload.userid)
     hive, created = Hive.objects.get_or_create(
         id=payload.id,
         userid=payload.userid,
@@ -90,6 +94,7 @@ def create_hive(request, payload: HiveSchema):
 # delete hive (soft delete)
 @api.delete("/hive", response=HiveSchema, auth=AuthBearer())
 def delete_hive(request, payload: HiveSchema):
+    log_activity(payload.userid)
     hive = Hive.objects.get(id=payload.id)
     hive.deleted = True
     hive.save()
@@ -100,6 +105,7 @@ def delete_hive(request, payload: HiveSchema):
 # limit: max allowed observations per hive
 @api.get("/obs/{userid}/{limit}", response=List[ObservationSchema], auth=AuthBearer())
 def get_observations(request, userid: str, limit: int):
+    log_activity(userid)
     hives = Hive.objects.filter(userid=userid, deleted=False)
     obs = Observation.objects.none()
     for hive in hives:
@@ -110,6 +116,7 @@ def get_observations(request, userid: str, limit: int):
 # create new observation
 @api.post("/obs", response=ObservationSchema, auth=AuthBearer())
 def create_observation(request, payload: ObservationSchema):
+    log_activity(payload.userid)
     hive = Hive.objects.get(id=payload.hive)
     obs, created = Observation.objects.get_or_create(
         id=payload.id,
@@ -143,6 +150,7 @@ def create_observation(request, payload: ObservationSchema):
 # delete observation (soft delete)
 @api.delete("/obs", response=ObservationSchema, auth=AuthBearer())
 def delete_observation(request, payload: ObservationSchema):
+    log_activity(payload.userid)
     obs = Observation.objects.get(id=payload.id)
     obs.deleted = True
     obs.save()
@@ -152,12 +160,14 @@ def delete_observation(request, payload: ObservationSchema):
 # get all global notes for a user
 @api.get("/notes/{userid}", response=List[GlobalNoteSchema], auth=AuthBearer())
 def get_notes(request, userid: str):
+    log_activity(userid)
     return GlobalNote.objects.filter(userid=userid, deleted=False)
 
 
 # create new global note
 @api.post("/note", response=GlobalNoteSchema, auth=AuthBearer())
 def create_note(request, payload: GlobalNoteSchema):
+    log_activity(payload.userid)
     note, created = GlobalNote.objects.get_or_create(
         id = payload.id,
         userid = payload.userid,
@@ -175,6 +185,7 @@ def create_note(request, payload: GlobalNoteSchema):
 # delete global note (soft delete)
 @api.delete("/note", response=GlobalNoteSchema, auth=AuthBearer())
 def delete_note(request, payload: GlobalNoteSchema):
+    log_activity(payload.userid)
     note = GlobalNote.objects.get(id=payload.id)
     note.deleted = True
     note.save()

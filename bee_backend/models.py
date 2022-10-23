@@ -50,3 +50,14 @@ class GlobalNote(models.Model):
 
     def __str__(self):
         return f"#{self.id}"
+
+
+class ActivityTracker(models.Model):
+    userid = models.CharField(max_length=64)
+    activity = models.IntegerField(default=0)
+
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"#{self.id}"
