@@ -17,20 +17,22 @@ api = NinjaAPI()
 
 
 class HiveSchema(Schema):
-    id: int = Field(None, alias="id")
+    # post be called as "id" on post and delete requests 
+    sid: int = Field(None, alias="id")
     userid: str
     number: str
     colour: str
     place: str
-    frames: int
+    frames: int = None
     archived: bool
 
 
 class ObservationSchema(Schema):
     id: int = Field(None, alias="id")
-    hive: int = Field(None, alias="hive.id")
-    observation_date: date
-    observation: str = None
+    # sid must be called as "hive.id" in post and delete requests
+    sid: int = Field(None, alias="hive.id") 
+    date: date
+    comment: str = None
     userid: str
     queen: int
     larva: int
@@ -70,7 +72,7 @@ def get_hives(request, userid: str, status: str):
 def create_hive(request, payload: HiveSchema):
     log_activity(payload.userid)
     hive, created = Hive.objects.get_or_create(
-        id=payload.id,
+        id=payload.sid,
         userid=payload.userid,
         defaults={
             "number": payload.number,
@@ -109,22 +111,23 @@ def get_observations(request, userid: str, limit: int):
     hives = Hive.objects.filter(userid=userid, deleted=False)
     obs = Observation.objects.none()
     for hive in hives:
-        obs = obs | Observation.objects.filter(hive__id=hive.id, deleted=False).order_by('observation_date')[:limit]
+        obs = obs | Observation.objects.filter(hive__id=hive.id, deleted=False).order_by('date')[:limit]
     return obs
 
 
-# create new observation
+# create new comment
 @api.post("/obs", response=ObservationSchema, auth=AuthBearer())
 def create_observation(request, payload: ObservationSchema):
     log_activity(payload.userid)
-    hive = Hive.objects.get(id=payload.hive)
+    print(payload.sid)
+    hive = Hive.objects.get(id=payload.sid)
     obs, created = Observation.objects.get_or_create(
         id=payload.id,
         hive=hive,
         userid=payload.userid,
         defaults={
-            "observation_date": payload.observation_date,
-            "observation": payload.observation,
+            "date": payload.date,
+            "comment": payload.comment,
             "queen": payload.queen,
             "larva": payload.larva,
             "egg": payload.egg,
@@ -133,10 +136,10 @@ def create_observation(request, payload: ObservationSchema):
             "varroa": payload.varroa,
         }
     )
-    # if observation already exists, update it
+    # if comment already exists, update it
     if not created:
-        obs.observation_date = payload.observation_date
-        obs.observation = payload.observation
+        obs.date = payload.date
+        obs.comment = payload.comment
         obs.queen = payload.queen
         obs.larva = payload.larva
         obs.egg = payload.egg
@@ -147,7 +150,7 @@ def create_observation(request, payload: ObservationSchema):
     return obs
 
 
-# delete observation (soft delete)
+# delete comment (soft delete)
 @api.delete("/obs", response=ObservationSchema, auth=AuthBearer())
 def delete_observation(request, payload: ObservationSchema):
     log_activity(payload.userid)

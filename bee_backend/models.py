@@ -6,7 +6,7 @@ class Hive(models.Model):
     number = models.CharField(max_length=16)
     colour = models.CharField(max_length=16)
     place = models.CharField(max_length=128)
-    frames = models.IntegerField()
+    frames = models.IntegerField(blank=True, null=True)
     archived = models.BooleanField(default=False)
 
     created = models.DateTimeField(auto_now_add=True)
@@ -22,8 +22,8 @@ class Hive(models.Model):
 
 class Observation(models.Model):
     hive = models.ForeignKey(Hive, related_name='observations', on_delete=models.PROTECT)
-    observation_date = models.DateTimeField()
-    observation = models.TextField(blank=True, null=True)
+    date = models.DateTimeField()
+    comment = models.TextField(blank=True, null=True)
     userid = models.CharField(max_length=64)
     queen = models.IntegerField()
     larva = models.IntegerField()
@@ -54,7 +54,7 @@ class GlobalNote(models.Model):
 
 class ActivityTracker(models.Model):
     userid = models.CharField(max_length=64)
-    activity = models.IntegerField(default=0)
+    activity = models.IntegerField(default=1)
 
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
